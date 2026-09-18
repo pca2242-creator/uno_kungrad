@@ -10,7 +10,7 @@ app.use(express.static(__dirname + '/public'));
 app.get('*', (req, res) => res.sendFile(__dirname + '/public/index.html'));
 
 let rooms = {};
-let publicQueueRoom = null; // Public matchmaking xonasi
+let publicQueueRoom = null;
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2', 'Wild'];
@@ -32,7 +32,7 @@ function createDeck() {
 
 io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomId, playerName, isPublic }) => {
-        let targetRoomId = roomId;
+        let targetRoomId = roomId || 'default_room';
 
         if (isPublic) {
             if (!publicQueueRoom || (rooms[publicQueueRoom] && rooms[publicQueueRoom].players.length >= 2)) {
@@ -56,7 +56,7 @@ io.on('connection', (socket) => {
 
         const room = rooms[targetRoomId];
 
-        if (room.players.length < 2 && !room.gameStarted) {
+        if (room.players.length < 4 && !room.gameStarted) {
             const isHost = room.players.length === 0;
             const playerColor = COLORS[room.players.length];
             const newPlayer = {
@@ -69,9 +69,15 @@ io.on('connection', (socket) => {
 
             room.players.push(newPlayer);
             socket.emit('init', { id: socket.id, roomId: targetRoomId, color: playerColor, isHost });
-            io.to(targetRoomId).emit('updatePlayers', { count: room.players.length, players: room.players, hostId: room.players[0].id });
+            
+            // Xonadagi barcha o'yinchilar ro'yxatini yuborish
+            io.to(targetRoomId).emit('updatePlayers', { 
+                count: room.players.length, 
+                players: room.players, 
+                hostId: room.players[0].id 
+            });
         } else {
-            socket.emit('full', 'Xona to\'la!');
+            socket.emit('full', 'Xona to\'la yoki o\'yin boshlanib bo\'lgan!');
         }
     });
 
@@ -103,7 +109,8 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('gameStateUpdate', {
             topCard: room.topCard,
             currentTurnPlayer: room.players[room.currentTurnIndex].name,
-            currentTurnId: room.players[room.currentTurnIndex].id
+            currentTurnId: room.players[room.currentTurnIndex].id,
+            players: room.players
         });
     }
 

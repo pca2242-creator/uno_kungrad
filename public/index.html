@@ -15,7 +15,6 @@
             display: flex; flex-direction: column; justify-content: space-between;
         }
 
-        /* HEADER BANNER */
         .brand-banner {
             text-align: center; margin-top: 20px; padding: 15px;
             background: rgba(255, 255, 255, 0.05); border-radius: 20px; backdrop-filter: blur(10px);
@@ -28,7 +27,6 @@
             text-transform: uppercase; letter-spacing: 1.5px;
         }
 
-        /* HEADER & TIMER */
         .header {
             padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
             background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -39,25 +37,34 @@
         }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 
-        /* MENU BUTTONS */
         .btn {
             border: none; padding: 14px 20px; font-size: 15px; font-weight: 900;
             border-radius: 14px; cursor: pointer; transition: all 0.2s;
-            width: 85%; max-width: 290px; margin: 10px auto; display: block; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            width: 85%; max-width: 290px; margin: 10px auto; display: block;
         }
-        .btn-offline { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; box-shadow: 0 6px 15px rgba(255,65,108,0.4); }
-        .btn-online { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; box-shadow: 0 6px 15px rgba(79,172,254,0.4); }
-        .btn-invite { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #fff; box-shadow: 0 6px 15px rgba(56,239,125,0.4); }
-        .btn-start { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); color: #000; box-shadow: 0 6px 15px rgba(241,196,15,0.4); margin-top: 15px; }
-        .btn:active { transform: scale(0.95); }
+        .btn-offline { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; }
+        .btn-online { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; }
+        .btn-invite { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #fff; }
+        .btn-start { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); color: #000; margin-top: 15px; }
 
-        /* GAME TABLE */
+        /* PLAYERS LIST BOX */
+        .players-container {
+            background: rgba(255, 255, 255, 0.08); border-radius: 15px; padding: 12px;
+            margin: 15px auto; width: 85%; max-width: 320px; text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .player-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; background: rgba(0,0,0,0.3);
+            font-size: 14px; font-weight: 700;
+        }
+        .player-row.active-turn { border: 2px solid #00f2fe; box-shadow: 0 0 8px #00f2fe; }
+
         .table-area { position: relative; flex: 1; display: flex; justify-content: center; align-items: center; gap: 30px; }
         .card {
             width: 85px; height: 130px; border-radius: 12px; display: flex; flex-direction: column;
             justify-content: center; align-items: center; font-size: 28px; font-weight: 900;
             border: 3.5px solid #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative;
-            transition: transform 0.2s;
         }
         .card.red { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .card.blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); }
@@ -65,21 +72,14 @@
         .card.yellow { background: #f1c40f; color: #111; }
         .card.black { background: linear-gradient(135deg, #232526, #414345); color: #ff00ff; }
 
-        .card-deck {
-            background: linear-gradient(135deg, #1f1c2c, #928dab); cursor: pointer;
-            border: 3px dashed #00f2fe; animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .card-deck { background: linear-gradient(135deg, #1f1c2c, #928dab); cursor: pointer; border: 3px dashed #00f2fe; }
 
-        /* HAND AREA */
         .hand-area {
             display: flex; justify-content: center; align-items: flex-end;
             padding: 10px; overflow-x: auto; min-height: 160px; margin-bottom: 40px;
         }
         .hand-card { margin-left: -25px; cursor: pointer; }
-        .hand-card:hover, .hand-card:active { transform: translateY(-25px) scale(1.15) !important; z-index: 99; }
 
-        /* MODAL */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
             justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
@@ -88,20 +88,17 @@
         .color-box { border-radius: 15px; border: 3px solid #fff; cursor: pointer; }
 
         .menu-bottom { position: fixed; bottom: 12px; left: 12px; z-index: 100; }
-        .btn-exit {
-            background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30;
-            padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer;
-        }
+        .btn-exit { background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30; padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; }
         #game-screen, #lobby-screen { display: none; height: 100%; flex-direction: column; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-    <!-- 3 QATORLI MAIN MENU -->
+    <!-- MAIN MENU -->
     <div id="main-menu" style="margin: auto; text-align: center; width: 100%;">
         <div class="brand-banner">
             <div class="brand-title">QOBILANNING<br>UNO O'YINI</div>
-            <p style="font-size: 12px; color: #aaa; margin-top: 5px;">Mobile 1v1 Edition</p>
+            <p style="font-size: 12px; color: #aaa; margin-top: 5px;">Mobile Edition</p>
         </div>
         <div style="margin-top: 25px;">
             <button class="btn btn-offline" onclick="startOfflineMode()">1-QATOR: OFFLINE (1v1 BOT) 🤖</button>
@@ -112,14 +109,13 @@
 
     <!-- LOBBY SCREEN -->
     <div id="lobby-screen">
-        <div class="header"><h2>1v1 KUTISH XONASI</h2></div>
-        <div style="text-align: center; margin: auto; padding: 20px;">
-            <p id="lobby-status" style="font-size: 18px; color: #00f2fe;">Raqib kutilmoqda...</p>
+        <div class="header"><h2>KUTISH XONASI</h2></div>
+        <div style="text-align: center; margin: auto; padding: 20px; width: 100%;">
+            <p id="lobby-status" style="font-size: 18px; color: #00f2fe;">O'yinchilar kutilmoqda...</p>
             
-            <!-- Telegram link orqali taklif qilish tugmasi -->
+            <div class="players-container" id="lobby-players-list"></div>
+
             <button id="share-link-btn" class="btn btn-invite" style="display:none;" onclick="shareInviteLink()">DO'STGA LINK YUBORISH 📤</button>
-            
-            <!-- Faqat 1-kirgan (Host) o'yinchi uchun ko'rinadigan tugma -->
             <button id="start-game-btn" class="btn btn-start" style="display:none;" onclick="triggerStartGame()">O'YINNI BOSHLASH 🚀</button>
         </div>
     </div>
@@ -131,14 +127,15 @@
             <span class="timer-badge" id="timer">15</span>
         </div>
 
+        <!-- In-Game Players HUD -->
+        <div class="players-container" id="game-players-list" style="margin: 5px auto; padding: 5px;"></div>
+
         <div class="table-area">
             <div>
                 <div class="card card-deck" onclick="drawCard()">UNO</div>
-                <small style="display:block; text-align:center; margin-top:5px; color:#aaa;">Paziroq</small>
             </div>
             <div>
                 <div id="table-card" class="card red">7</div>
-                <small style="display:block; text-align:center; margin-top:5px; color:#aaa;">Stol</small>
             </div>
         </div>
 
@@ -173,22 +170,22 @@
             if (Telegram.HapticFeedback) Telegram.HapticFeedback.impactOccurred('medium');
         }
 
-        // URL parametrlarini tekshirish (Link orqali kirilganda)
-        const urlParams = new URLSearchParams(window.location.search);
-        const startRoom = urlParams.get('startapp') || urlParams.get('room');
-        if (startRoom) {
-            roomId = startRoom;
+        // Telegram Deep Link tekshirish
+        const initData = Telegram.initDataUnsafe;
+        const startAppParam = initData?.start_param || new URLSearchParams(window.location.search).get('startapp');
+
+        if (startAppParam) {
+            roomId = startAppParam;
             connectSocket(false);
         }
 
         function shareInviteLink() {
-            const botUsername = "QobilanUnoBot"; // Telegram botingiz usernamesi
+            const botUsername = "QobilanUnoBot"; // O'zingizning bot usernamesini kiriting
             const shareUrl = `https://t.me/${botUsername}/play?startapp=${roomId}`;
-            const shareText = "Qobilanning UNO o'yinida 1v1 bellashuvga taklif qilaman! Havolani bosing va o'yinga qo'shiling:";
+            const shareText = "Qobilanning UNO o'yiniga taklif qilaman! Havolani bosing va qo'shiling:";
             Telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
         }
 
-        // 1-QATOR: Offline Bot
         function startOfflineMode() {
             isOffline = true;
             document.getElementById('main-menu').style.display = 'none';
@@ -205,14 +202,16 @@
             renderHand();
             renderTableCard();
             document.getElementById('current-turn').innerText = "Navbat: Sizda";
+
+            // Bot o'yinchilari ro'yxatini chiqarish
+            renderPlayersList('game-players-list', [
+                { name: "Siz", id: "me" },
+                { name: "Bot 🤖", id: "bot" }
+            ], "me");
         }
 
-        // 2-QATOR: Public Matchmaking
-        function startPublicOnline() {
-            connectSocket(true);
-        }
+        function startPublicOnline() { connectSocket(true); }
 
-        // 3-QATOR: Do'stlar bilan (Link orqali)
         function startInviteOnline() {
             roomId = 'room_' + Math.random().toString(36).substr(2, 6);
             document.getElementById('share-link-btn').style.display = 'block';
@@ -234,19 +233,17 @@
             });
 
             socket.on('updatePlayers', (data) => {
+                renderPlayersList('lobby-players-list', data.players);
+
                 const statusElem = document.getElementById('lobby-status');
                 const startBtn = document.getElementById('start-game-btn');
 
-                if (data.count === 1) {
-                    statusElem.innerText = "Raqib kutilmoqda...";
+                if (data.count >= 2 && socket.id === data.hostId) {
+                    startBtn.style.display = 'block';
+                    statusElem.innerText = "O'yinni boshlashingiz mumkin!";
+                } else {
                     startBtn.style.display = 'none';
-                } else if (data.count === 2) {
-                    statusElem.innerText = "Raqib ulandi!";
-                    if (socket.id === data.hostId) {
-                        startBtn.style.display = 'block'; // Faqat 1-o'yinchida O'yinni boshlash tugmasi ko'rinadi
-                    } else {
-                        statusElem.innerText = "O'yin birinchi o'yinchi tomonidan boshlanishini kuting...";
-                    }
+                    statusElem.innerText = `O'yinchilar: ${data.count} ta ulandi...`;
                 }
             });
 
@@ -260,16 +257,31 @@
                 topCard = data.topCard;
                 renderTableCard();
                 document.getElementById('current-turn').innerText = "Navbat: " + data.currentTurnPlayer;
+
+                renderPlayersList('game-players-list', data.players, data.currentTurnId);
             });
 
+            socket.on('full', (msg) => { alert(msg); location.reload(); });
             socket.on('invalidMove', (msg) => { vibrate(); alert(msg); });
             socket.on('gameOver', (msg) => { alert(msg); location.reload(); });
         }
 
+        function renderPlayersList(elementId, playersList, activeTurnId = null) {
+            const listElem = document.getElementById(elementId);
+            listElem.innerHTML = '';
+            playersList.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = `player-row ${p.id === activeTurnId ? 'active-turn' : ''}`;
+                row.innerHTML = `
+                    <span>${idx + 1}. ${p.name}</span>
+                    <span style="font-size:11px; color:#00f2fe;">${p.id === socket?.id ? '(Siz)' : ''}</span>
+                `;
+                listElem.appendChild(row);
+            });
+        }
+
         function triggerStartGame() {
-            if (socket && roomId) {
-                socket.emit('startGame', { roomId });
-            }
+            if (socket && roomId) socket.emit('startGame', { roomId });
         }
 
         function botPlayTurn() {
@@ -291,6 +303,7 @@
                 }
                 isMyTurn = true;
                 document.getElementById('current-turn').innerText = "Navbat: Sizda";
+                renderPlayersList('game-players-list', [{ name: "Siz", id: "me" }, { name: "Bot 🤖", id: "bot" }], "me");
             }, 1200);
         }
 
@@ -337,6 +350,7 @@
 
                     isMyTurn = false;
                     document.getElementById('current-turn').innerText = "Navbat: Botda";
+                    renderPlayersList('game-players-list', [{ name: "Siz", id: "me" }, { name: "Bot 🤖", id: "bot" }], "bot");
                     botPlayTurn();
                 } else {
                     alert("Bu kartani tashlab bo'lmaydi!");
