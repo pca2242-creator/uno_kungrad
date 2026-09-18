@@ -9,7 +9,8 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.static(__dirname + '/public'));
 app.get('*', (req, res) => res.sendFile(__dirname + '/public/index.html'));
 
-let rooms = {}; // Room id orqali xonalarni boshqarish
+let rooms = {};
+let publicQueueRoom = null; // Public matchmaking xonasi
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2', 'Wild'];
@@ -30,11 +31,20 @@ function createDeck() {
 }
 
 io.on('connection', (socket) => {
-    socket.on('joinRoom', ({ roomId, playerName }) => {
-        socket.join(roomId);
+    socket.on('joinRoom', ({ roomId, playerName, isPublic }) => {
+        let targetRoomId = roomId;
 
-        if (!rooms[roomId]) {
-            rooms[roomId] = {
+        if (isPublic) {
+            if (!publicQueueRoom || (rooms[publicQueueRoom] && rooms[publicQueueRoom].players.length >= 2)) {
+                publicQueueRoom = 'pub_' + Math.random().toString(36).substr(2, 6);
+            }
+            targetRoomId = publicQueueRoom;
+        }
+
+        socket.join(targetRoomId);
+
+        if (!rooms[targetRoomId]) {
+            rooms[targetRoomId] = {
                 players: [],
                 deck: [],
                 topCard: null,
@@ -44,50 +54,46 @@ io.on('connection', (socket) => {
             };
         }
 
-        const room = rooms[roomId];
+        const room = rooms[targetRoomId];
 
         if (room.players.length < 2 && !room.gameStarted) {
+            const isHost = room.players.length === 0;
             const playerColor = COLORS[room.players.length];
             const newPlayer = {
                 id: socket.id,
                 name: playerName || `O'yinchi ${room.players.length + 1}`,
                 color: playerColor,
-                isHost: room.players.length === 0,
+                isHost,
                 hand: []
             };
 
             room.players.push(newPlayer);
-            socket.emit('init', { id: socket.id, color: playerColor, isHost: newPlayer.isHost });
-            io.to(roomId).emit('updatePlayers', { count: room.players.length, players: room.players });
-
-            // 2 ta o'yinchi yig'ilsa o'yin avtomatik boshlanadi
-            if (room.players.length === 2) {
-                startGame(roomId);
-            }
+            socket.emit('init', { id: socket.id, roomId: targetRoomId, color: playerColor, isHost });
+            io.to(targetRoomId).emit('updatePlayers', { count: room.players.length, players: room.players, hostId: room.players[0].id });
         } else {
             socket.emit('full', 'Xona to\'la!');
         }
     });
 
-    function startGame(roomId) {
+    socket.on('startGame', ({ roomId }) => {
         const room = rooms[roomId];
-        if (!room) return;
+        if (room && room.players.length >= 2 && room.players[0].id === socket.id && !room.gameStarted) {
+            room.gameStarted = true;
+            room.deck = createDeck();
 
-        room.gameStarted = true;
-        room.deck = createDeck();
+            room.players.forEach(p => {
+                p.hand = room.deck.splice(0, 7);
+                io.to(p.id).emit('dealHand', p.hand);
+            });
 
-        room.players.forEach(p => {
-            p.hand = room.deck.splice(0, 7);
-            io.to(p.id).emit('dealHand', p.hand);
-        });
+            do {
+                room.topCard = room.deck.pop();
+            } while (room.topCard.color === 'black');
 
-        do {
-            room.topCard = room.deck.pop();
-        } while (room.topCard.color === 'black');
-
-        room.currentTurnIndex = 0;
-        broadcastGameState(roomId);
-    }
+            room.currentTurnIndex = 0;
+            broadcastGameState(roomId);
+        }
+    });
 
     function broadcastGameState(roomId) {
         const room = rooms[roomId];
@@ -177,14 +183,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        for (let roomId in rooms) {
-            let room = rooms[roomId];
+        for (let rId in rooms) {
+            let room = rooms[rId];
             let index = room.players.findIndex(p => p.id === socket.id);
             if (index !== -1) {
                 room.players.splice(index, 1);
                 if (room.turnTimer) clearInterval(room.turnTimer);
-                io.to(roomId).emit('gameOver', 'Raqib o\'yindan chiqib ketdi!');
-                delete rooms[roomId];
+                io.to(rId).emit('gameOver', 'Raqib o\'yindan chiqib ketdi!');
+                delete rooms[rId];
                 break;
             }
         }

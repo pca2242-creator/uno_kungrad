@@ -15,14 +15,14 @@
             display: flex; flex-direction: column; justify-content: space-between;
         }
 
-        /* HEADER BANNER & BRANDING */
+        /* HEADER BANNER */
         .brand-banner {
-            text-align: center; margin-top: 25px; padding: 15px;
+            text-align: center; margin-top: 20px; padding: 15px;
             background: rgba(255, 255, 255, 0.05); border-radius: 20px; backdrop-filter: blur(10px);
             border: 2px solid rgba(0, 242, 254, 0.3); box-shadow: 0 0 20px rgba(0,242,254,0.2);
         }
         .brand-title {
-            font-size: 28px; font-weight: 900;
+            font-size: 26px; font-weight: 900;
             background: linear-gradient(45deg, #ff0055, #00f2fe, #f1c40f);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             text-transform: uppercase; letter-spacing: 1.5px;
@@ -39,14 +39,16 @@
         }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 
-        /* BUTTONS */
+        /* MENU BUTTONS */
         .btn {
-            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-            color: #000; border: none; padding: 14px 28px; font-size: 16px; font-weight: 900;
-            border-radius: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(79,172,254,0.4);
-            transition: all 0.2s; width: 85%; max-width: 280px; margin: 10px auto; display: block;
+            border: none; padding: 14px 20px; font-size: 15px; font-weight: 900;
+            border-radius: 14px; cursor: pointer; transition: all 0.2s;
+            width: 85%; max-width: 290px; margin: 10px auto; display: block; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .btn-offline { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; box-shadow: 0 8px 20px rgba(255,65,108,0.4); }
+        .btn-offline { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; box-shadow: 0 6px 15px rgba(255,65,108,0.4); }
+        .btn-online { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; box-shadow: 0 6px 15px rgba(79,172,254,0.4); }
+        .btn-invite { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #fff; box-shadow: 0 6px 15px rgba(56,239,125,0.4); }
+        .btn-start { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); color: #000; box-shadow: 0 6px 15px rgba(241,196,15,0.4); margin-top: 15px; }
         .btn:active { transform: scale(0.95); }
 
         /* GAME TABLE */
@@ -95,15 +97,16 @@
 </head>
 <body>
 
-    <!-- MAIN MENU -->
+    <!-- 3 QATORLI MAIN MENU -->
     <div id="main-menu" style="margin: auto; text-align: center; width: 100%;">
         <div class="brand-banner">
             <div class="brand-title">QOBILANNING<br>UNO O'YINI</div>
             <p style="font-size: 12px; color: #aaa; margin-top: 5px;">Mobile 1v1 Edition</p>
         </div>
-        <div style="margin-top: 30px;">
-            <button class="btn btn-offline" onclick="startOfflineMode()">OFFLINE (1v1 BOT) 🤖</button>
-            <button class="btn" onclick="startOnlineLobby()">ONLINE (DO'ST BILAN) 🌐</button>
+        <div style="margin-top: 25px;">
+            <button class="btn btn-offline" onclick="startOfflineMode()">1-QATOR: OFFLINE (1v1 BOT) 🤖</button>
+            <button class="btn btn-online" onclick="startPublicOnline()">2-QATOR: ONLINE (MATCHMAKING) 🌐</button>
+            <button class="btn btn-invite" onclick="startInviteOnline()">3-QATOR: DO'STLAR BILAN (LINK) ✉️</button>
         </div>
     </div>
 
@@ -112,7 +115,12 @@
         <div class="header"><h2>1v1 KUTISH XONASI</h2></div>
         <div style="text-align: center; margin: auto; padding: 20px;">
             <p id="lobby-status" style="font-size: 18px; color: #00f2fe;">Raqib kutilmoqda...</p>
-            <button class="btn" onclick="shareInviteLink()">DO'STGA LINK YUBORISH 📤</button>
+            
+            <!-- Telegram link orqali taklif qilish tugmasi -->
+            <button id="share-link-btn" class="btn btn-invite" style="display:none;" onclick="shareInviteLink()">DO'STGA LINK YUBORISH 📤</button>
+            
+            <!-- Faqat 1-kirgan (Host) o'yinchi uchun ko'rinadigan tugma -->
+            <button id="start-game-btn" class="btn btn-start" style="display:none;" onclick="triggerStartGame()">O'YINNI BOSHLASH 🚀</button>
         </div>
     </div>
 
@@ -157,7 +165,7 @@
         const Telegram = window.Telegram.WebApp;
         Telegram.ready(); Telegram.expand();
 
-        let socket, isOffline = false, roomId = null, myCards = [], botCards = [], topCard = {}, isMyTurn = true, pendingCardIdx = null;
+        let socket, isOffline = false, roomId = null, myCards = [], botCards = [], topCard = {}, isMyTurn = true, pendingCardIdx = null, isHost = false;
         const COLORS = ['red', 'blue', 'green', 'yellow'];
         const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2', 'Wild'];
 
@@ -165,39 +173,80 @@
             if (Telegram.HapticFeedback) Telegram.HapticFeedback.impactOccurred('medium');
         }
 
-        // --- TELEGRAM LINK HANDLER ---
+        // URL parametrlarini tekshirish (Link orqali kirilganda)
         const urlParams = new URLSearchParams(window.location.search);
         const startRoom = urlParams.get('startapp') || urlParams.get('room');
         if (startRoom) {
             roomId = startRoom;
-            startOnlineMode();
+            connectSocket(false);
         }
 
         function shareInviteLink() {
-            const botUsername = "SIZNING_BOT_USERNAME"; // Bu yerga Telegram botingiz usernamesini yozing (masalan: QobilanUnoBot)
+            const botUsername = "QobilanUnoBot"; // Telegram botingiz usernamesi
             const shareUrl = `https://t.me/${botUsername}/play?startapp=${roomId}`;
             const shareText = "Qobilanning UNO o'yinida 1v1 bellashuvga taklif qilaman! Havolani bosing va o'yinga qo'shiling:";
             Telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
         }
 
-        // --- ONLINE MODE ---
-        function startOnlineLobby() {
-            if (!roomId) roomId = 'room_' + Math.random().toString(36).substr(2, 6);
-            startOnlineMode();
+        // 1-QATOR: Offline Bot
+        function startOfflineMode() {
+            isOffline = true;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            let deck = [];
+            COLORS.forEach(c => VALUES.forEach(v => deck.push({ color: c, val: v })));
+            deck.sort(() => Math.random() - 0.5);
+
+            myCards = deck.splice(0, 7);
+            botCards = deck.splice(0, 7);
+            topCard = deck.pop();
+
+            renderHand();
+            renderTableCard();
+            document.getElementById('current-turn').innerText = "Navbat: Sizda";
         }
 
-        function startOnlineMode() {
+        // 2-QATOR: Public Matchmaking
+        function startPublicOnline() {
+            connectSocket(true);
+        }
+
+        // 3-QATOR: Do'stlar bilan (Link orqali)
+        function startInviteOnline() {
+            roomId = 'room_' + Math.random().toString(36).substr(2, 6);
+            document.getElementById('share-link-btn').style.display = 'block';
+            connectSocket(false);
+        }
+
+        function connectSocket(isPublic) {
             isOffline = false;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'flex';
 
             socket = io();
             const playerName = Telegram.initDataUnsafe?.user?.first_name || "O'yinchi";
-            socket.emit('joinRoom', { roomId, playerName });
+            socket.emit('joinRoom', { roomId, playerName, isPublic });
+
+            socket.on('init', (data) => {
+                roomId = data.roomId;
+                isHost = data.isHost;
+            });
 
             socket.on('updatePlayers', (data) => {
+                const statusElem = document.getElementById('lobby-status');
+                const startBtn = document.getElementById('start-game-btn');
+
                 if (data.count === 1) {
-                    document.getElementById('lobby-status').innerText = "Raqib kutilmoqda...";
+                    statusElem.innerText = "Raqib kutilmoqda...";
+                    startBtn.style.display = 'none';
+                } else if (data.count === 2) {
+                    statusElem.innerText = "Raqib ulandi!";
+                    if (socket.id === data.hostId) {
+                        startBtn.style.display = 'block'; // Faqat 1-o'yinchida O'yinni boshlash tugmasi ko'rinadi
+                    } else {
+                        statusElem.innerText = "O'yin birinchi o'yinchi tomonidan boshlanishini kuting...";
+                    }
                 }
             });
 
@@ -217,23 +266,10 @@
             socket.on('gameOver', (msg) => { alert(msg); location.reload(); });
         }
 
-        // --- OFFLINE 1v1 BOT MODE ---
-        function startOfflineMode() {
-            isOffline = true;
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'flex';
-
-            let deck = [];
-            COLORS.forEach(c => VALUES.forEach(v => deck.push({ color: c, val: v })));
-            deck.sort(() => Math.random() - 0.5);
-
-            myCards = deck.splice(0, 7);
-            botCards = deck.splice(0, 7);
-            topCard = deck.pop();
-
-            renderHand();
-            renderTableCard();
-            document.getElementById('current-turn').innerText = "Navbat: Sizda";
+        function triggerStartGame() {
+            if (socket && roomId) {
+                socket.emit('startGame', { roomId });
+            }
         }
 
         function botPlayTurn() {
@@ -258,7 +294,6 @@
             }, 1200);
         }
 
-        // --- GENERAL LOGIC ---
         function renderHand() {
             const handElem = document.getElementById('player-hand');
             handElem.innerHTML = '';
