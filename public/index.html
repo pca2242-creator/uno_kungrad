@@ -180,10 +180,24 @@
         }
 
         function shareInviteLink() {
-            const botUsername = "QobilanUnoBot"; // O'zingizning bot usernamesini kiriting
-            const shareUrl = `https://t.me/${botUsername}/play?startapp=${roomId}`;
-            const shareText = "Qobilanning UNO o'yiniga taklif qilaman! Havolani bosing va qo'shiling:";
-            Telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+    vibrate();
+    
+    // Telegram WebApp orqali bot usernamesini avtomatik aniqlash
+    // Agar bot username topilmasa, zaxira sifatida botingiz usernamesini yozib qo'ying
+    const botUsername = Telegram.initDataUnsafe?.bot_username || "OzingizningBotUsernameringiz"; 
+
+    if (!roomId) {
+        alert("Xona kodi aniqlanmadi!");
+        return;
+    }
+
+    // Har bir foydalanuvchi uchun dinamik taklif havolasi
+    const shareUrl = `https://t.me/${botUsername}/play?startapp=${roomId}`;
+    const shareText = "Qobilanning UNO o'yiniga taklif qilaman! Havolani bosing va xonaga qo'shiling: 🎮";
+
+    // Telegram ulashish oynasini ochish
+    Telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+}
         }
 
         function startOfflineMode() {
