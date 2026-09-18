@@ -1,2 +1,5 @@
 npm init -y
 npm install express socket.io
+git add package.json package-lock.json
+git commit -m "package.json fayli qo'shildi"
+git push origin main
