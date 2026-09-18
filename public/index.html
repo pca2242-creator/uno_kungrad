@@ -7,16 +7,13 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #111 url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop') no-repeat center center fixed;
             background-size: cover;
             color: #fff;
             text-align: center;
-            padding: 0;
             margin: 0;
             height: 100vh;
             overflow: hidden;
@@ -30,12 +27,7 @@
             flex-direction: column;
             justify-content: space-between;
         }
-        h1 {
-            margin: 5px 0;
-            font-size: 24px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            color: #ffcc00;
-        }
+        h1 { margin: 5px 0; font-size: 24px; color: #ffcc00; }
         .btn {
             background-color: #28a745;
             color: white;
@@ -48,21 +40,10 @@
             margin: 8px auto;
             display: block;
             width: 80%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: 0.2s;
         }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .btn-offline {
-            background-color: #17a2b8;
-        }
-        .btn-start {
-            background-color: #ffc107;
-            color: #000;
-        }
+        .btn-offline { background-color: #17a2b8; }
+        .btn-start { background-color: #ffc107; color: #000; }
         
-        /* O'YIN STOLI */
         .table-area {
             display: flex;
             justify-content: center;
@@ -88,8 +69,6 @@
             cursor: pointer;
             border: 3px dashed #ffcc00;
         }
-
-        /* QO'LDAGI KARTALAR */
         .hand-area {
             display: flex;
             justify-content: center;
@@ -108,11 +87,8 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-        .hand-card:hover {
-            transform: translateY(-10px);
-        }
+        .hand-card:hover { transform: translateY(-10px); }
 
-        /* PASTKI CHAP MENU */
         .bottom-left-menu {
             position: fixed;
             bottom: 15px;
@@ -127,21 +103,9 @@
             border-radius: 50px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
-
-        .status {
-            font-size: 15px;
-            color: #00ffcc;
-            margin: 5px 0;
-        }
-        
-        #game-screen, #lobby-screen {
-            display: none;
-        }
+        .status { font-size: 15px; color: #00ffcc; margin: 5px 0; }
+        #game-screen, #lobby-screen { display: none; }
     </style>
 </head>
 <body>
@@ -155,7 +119,7 @@
             <button class="btn btn-offline" onclick="startOffline()">Offline O'yin 🤖</button>
         </div>
 
-        <!-- LOBBY (KUTISH XONASI) -->
+        <!-- LOBBY -->
         <div id="lobby-screen" style="margin: auto 0;">
             <h2>Kutish Xonasi</h2>
             <div id="player-count" class="status">Serverga ulanilmoqda...</div>
@@ -175,7 +139,7 @@
                     <small>Koloda</small>
                 </div>
                 <div>
-                    <div id="table-card" class="card" style="background-color: #ff3333;">7</div>
+                    <div id="table-card" class="card" style="background-color: #ff3333;">-</div>
                     <small>Tashlangan</small>
                 </div>
             </div>
@@ -183,18 +147,14 @@
             <!-- O'YINCHINING KARTALARI -->
             <div style="margin-bottom: 50px;">
                 <p style="margin: 5px; font-size: 14px;">Sizning kartalaringiz:</p>
-                <div id="player-hand" class="hand-area">
-                    <!-- Kartalar dinamik qo'shiladi -->
-                </div>
+                <div id="player-hand" class="hand-area"></div>
             </div>
         </div>
     </div>
 
-    <!-- PASTKI CHAP MENYU (CHIQISH ESHIGI) -->
+    <!-- PASTKI CHAP MENYU -->
     <div class="bottom-left-menu">
-        <button class="menu-btn" onclick="exitGame()">
-            🚪 Chiqish
-        </button>
+        <button class="menu-btn" onclick="exitGame()">🚪 Chiqish</button>
     </div>
 
     <script>
@@ -204,20 +164,12 @@
 
         let socket;
         let isHost = false;
-
-        // Boshlang'ich kartalar toplami (Sinov uchun)
-        const myHand = [
-            { color: 'red', val: '5' },
-            { color: 'blue', val: '2' },
-            { color: 'green', val: 'Skip' },
-            { color: 'yellow', val: '7' },
-            { color: 'red', val: '+2' }
-        ];
+        let myCards = [];
 
         function renderHand() {
             const handElem = document.getElementById('player-hand');
             handElem.innerHTML = '';
-            myHand.forEach((item, idx) => {
+            myCards.forEach((item, idx) => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card hand-card';
                 cardDiv.style.backgroundColor = item.color;
@@ -228,19 +180,11 @@
         }
 
         function playCard(index) {
-            const card = myHand[index];
-            document.getElementById('table-card').style.backgroundColor = card.color;
-            document.getElementById('table-card').innerText = card.val;
-            myHand.splice(index, 1);
-            renderHand();
+            if (socket) socket.emit('playCard', index);
         }
 
         function drawCard() {
-            const colors = ['red', 'blue', 'green', 'yellow'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            const randomVal = Math.floor(Math.random() * 9);
-            myHand.push({ color: randomColor, val: randomVal.toString() });
-            renderHand();
+            if (socket) socket.emit('drawCard');
         }
 
         function startOnline() {
@@ -248,7 +192,6 @@
             document.getElementById('lobby-screen').style.display = 'block';
 
             socket = io();
-
             const name = Telegram.initDataUnsafe?.user?.first_name || "O'yinchi";
             socket.emit('joinRoom', name);
 
@@ -259,50 +202,40 @@
 
             socket.on('updatePlayers', (data) => {
                 document.getElementById('player-count').innerText = "Xonadagi o'yinchilar: " + data.count + " / 4";
-                
-                if (isHost && data.count >= 2) {
-                    document.getElementById('start-btn').style.display = 'block';
-                } else {
-                    document.getElementById('start-btn').style.display = 'none';
-                }
+                document.getElementById('start-btn').style.display = (isHost && data.count >= 2) ? 'block' : 'none';
             });
 
-            socket.on('makeHost', () => {
-                isHost = true;
-            });
-
-            socket.on('gameStarted', (data) => {
-                document.getElementById('lobby-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'block';
-                document.getElementById('game-status').innerText = data.message;
-                document.getElementById('current-turn').innerText = "O'yin boshlandi! Kartalaringizni bosing.";
+            socket.on('dealHand', (hand) => {
+                myCards = hand;
                 renderHand();
             });
 
-            socket.on('full', (msg) => {
+            socket.on('gameStateUpdate', (data) => {
+                document.getElementById('lobby-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'block';
+                
+                document.getElementById('table-card').style.backgroundColor = data.topCard.color;
+                document.getElementById('table-card').innerText = data.topCard.val;
+                document.getElementById('current-turn').innerText = "Navbat: " + data.currentTurnPlayer;
+            });
+
+            socket.on('invalidMove', (msg) => alert(msg));
+            socket.on('gameOver', (msg) => {
                 alert(msg);
                 location.reload();
             });
         }
 
         function triggerStart() {
-            if (socket) {
-                socket.emit('startGame');
-            }
+            if (socket) socket.emit('startGame');
         }
 
         function startOffline() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            document.getElementById('game-status').innerText = "Botlarga qarshi rejim";
-            document.getElementById('current-turn').innerText = "Sizning navbatingiz";
-            renderHand();
+            alert("Offline rejim botlari bilan tez orada qo'shiladi!");
         }
 
         function exitGame() {
-            if (confirm("Rostdan ham o'yindan chiqmoqchimisiz?")) {
-                location.reload();
-            }
+            if (confirm("Rostdan ham o'yindan chiqmoqchimisiz?")) location.reload();
         }
     </script>
 </body>
