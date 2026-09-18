@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>UNO Mobile HD</title>
+    <title>Qobilanning UNO o'yini</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -11,9 +11,21 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: radial-gradient(circle, #2a085c 0%, #0d011d 100%);
-            color: #fff;
-            margin: 0; height: 100vh; overflow: hidden;
+            color: #fff; margin: 0; height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        /* HEADER BANNER & BRANDING */
+        .brand-banner {
+            text-align: center; margin-top: 25px; padding: 15px;
+            background: rgba(255, 255, 255, 0.05); border-radius: 20px; backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 242, 254, 0.3); box-shadow: 0 0 20px rgba(0,242,254,0.2);
+        }
+        .brand-title {
+            font-size: 28px; font-weight: 900;
+            background: linear-gradient(45deg, #ff0055, #00f2fe, #f1c40f);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; letter-spacing: 1.5px;
         }
 
         /* HEADER & TIMER */
@@ -30,28 +42,27 @@
         /* BUTTONS */
         .btn {
             background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-            color: #000; border: none; padding: 14px 28px; font-size: 18px; font-weight: 900;
+            color: #000; border: none; padding: 14px 28px; font-size: 16px; font-weight: 900;
             border-radius: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(79,172,254,0.4);
-            transition: all 0.2s; width: 100%; max-width: 280px; margin: 10px auto; display: block;
+            transition: all 0.2s; width: 85%; max-width: 280px; margin: 10px auto; display: block;
         }
+        .btn-offline { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: #fff; box-shadow: 0 8px 20px rgba(255,65,108,0.4); }
         .btn:active { transform: scale(0.95); }
 
         /* GAME TABLE */
-        .table-area {
-            position: relative; flex: 1; display: flex; justify-content: center; align-items: center; gap: 30px;
-        }
+        .table-area { position: relative; flex: 1; display: flex; justify-content: center; align-items: center; gap: 30px; }
         .card {
             width: 85px; height: 130px; border-radius: 12px; display: flex; flex-direction: column;
             justify-content: center; align-items: center; font-size: 28px; font-weight: 900;
-            border: 3.5px solid #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative;
+            border: 3.5px solid #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative;
+            transition: transform 0.2s;
         }
         .card.red { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
         .card.blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); }
         .card.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
-        .card.yellow { background: linear-gradient(135deg, #f80759, #bee6c7); background: #f1c40f; color: #111; }
+        .card.yellow { background: #f1c40f; color: #111; }
         .card.black { background: linear-gradient(135deg, #232526, #414345); color: #ff00ff; }
-        
+
         .card-deck {
             background: linear-gradient(135deg, #1f1c2c, #928dab); cursor: pointer;
             border: 3px dashed #00f2fe; animation: float 3s ease-in-out infinite;
@@ -60,32 +71,21 @@
 
         /* HAND AREA */
         .hand-area {
-            display: flex; justify-content: center; align-items: flex-end; gap: -20px;
-            padding: 10px; overflow-x: auto; min-height: 160px; margin-bottom: 50px;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding: 10px; overflow-x: auto; min-height: 160px; margin-bottom: 40px;
         }
-        .hand-card {
-            margin-left: -25px; cursor: pointer; transform-origin: bottom center;
-        }
-        .hand-card:hover, .hand-card:active {
-            transform: translateY(-25px) scale(1.15) !important; z-index: 99;
-        }
+        .hand-card { margin-left: -25px; cursor: pointer; }
+        .hand-card:hover, .hand-card:active { transform: translateY(-25px) scale(1.15) !important; z-index: 99; }
 
-        /* COLOR PICKER MODAL */
+        /* MODAL */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
             justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
         }
-        .color-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 200px; height: 200px;
-        }
-        .color-box {
-            border-radius: 15px; border: 3px solid #fff; cursor: pointer; transition: 0.2s;
-        }
-        .color-box:active { transform: scale(0.9); }
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 200px; height: 200px; }
+        .color-box { border-radius: 15px; border: 3px solid #fff; cursor: pointer; }
 
-        .menu-bottom {
-            position: fixed; bottom: 12px; left: 12px; z-index: 100;
-        }
+        .menu-bottom { position: fixed; bottom: 12px; left: 12px; z-index: 100; }
         .btn-exit {
             background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30;
             padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer;
@@ -95,19 +95,28 @@
 </head>
 <body>
 
-    <div id="main-menu" style="margin: auto text-align: center;">
-        <h1 style="font-size: 36px; color: #00f2fe; text-shadow: 0 0 15px #00f2fe;">UNO MOBILE</h1>
-        <button class="btn" onclick="startOnline()">ONLINE XONA 🌐</button>
-    </div>
-
-    <div id="lobby-screen">
-        <div class="header"><h2>KUTISH XONASI</h2></div>
-        <div style="text-align: center; margin: auto;">
-            <div id="player-count" style="font-size: 20px; color: #00f2fe; margin-bottom: 15px;">Ulanilmoqda...</div>
-            <button id="start-btn" class="btn" style="display:none;" onclick="triggerStart()">O'YINNI BOSHLAASH 🚀</button>
+    <!-- MAIN MENU -->
+    <div id="main-menu" style="margin: auto; text-align: center; width: 100%;">
+        <div class="brand-banner">
+            <div class="brand-title">QOBILANNING<br>UNO O'YINI</div>
+            <p style="font-size: 12px; color: #aaa; margin-top: 5px;">Mobile 1v1 Edition</p>
+        </div>
+        <div style="margin-top: 30px;">
+            <button class="btn btn-offline" onclick="startOfflineMode()">OFFLINE (1v1 BOT) 🤖</button>
+            <button class="btn" onclick="startOnlineLobby()">ONLINE (DO'ST BILAN) 🌐</button>
         </div>
     </div>
 
+    <!-- LOBBY SCREEN -->
+    <div id="lobby-screen">
+        <div class="header"><h2>1v1 KUTISH XONASI</h2></div>
+        <div style="text-align: center; margin: auto; padding: 20px;">
+            <p id="lobby-status" style="font-size: 18px; color: #00f2fe;">Raqib kutilmoqda...</p>
+            <button class="btn" onclick="shareInviteLink()">DO'STGA LINK YUBORISH 📤</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
     <div id="game-screen">
         <div class="header">
             <span id="current-turn" style="font-weight: 700;">Navbat: -</span>
@@ -134,7 +143,7 @@
         <button class="btn-exit" onclick="exitGame()">🚪 Chiqish</button>
     </div>
 
-    <!-- COLOR PICKER -->
+    <!-- COLOR PICKER MODAL -->
     <div id="color-modal" class="modal">
         <div class="color-grid">
             <div class="color-box" style="background:#ff416c;" onclick="pickColor('red')"></div>
@@ -148,12 +157,108 @@
         const Telegram = window.Telegram.WebApp;
         Telegram.ready(); Telegram.expand();
 
-        let socket, isHost = false, myCards = [], pendingCardIdx = null;
+        let socket, isOffline = false, roomId = null, myCards = [], botCards = [], topCard = {}, isMyTurn = true, pendingCardIdx = null;
+        const COLORS = ['red', 'blue', 'green', 'yellow'];
+        const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2', 'Wild'];
 
         function vibrate() {
             if (Telegram.HapticFeedback) Telegram.HapticFeedback.impactOccurred('medium');
         }
 
+        // --- TELEGRAM LINK HANDLER ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const startRoom = urlParams.get('startapp') || urlParams.get('room');
+        if (startRoom) {
+            roomId = startRoom;
+            startOnlineMode();
+        }
+
+        function shareInviteLink() {
+            const botUsername = "SIZNING_BOT_USERNAME"; // Bu yerga Telegram botingiz usernamesini yozing (masalan: QobilanUnoBot)
+            const shareUrl = `https://t.me/${botUsername}/play?startapp=${roomId}`;
+            const shareText = "Qobilanning UNO o'yinida 1v1 bellashuvga taklif qilaman! Havolani bosing va o'yinga qo'shiling:";
+            Telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+        }
+
+        // --- ONLINE MODE ---
+        function startOnlineLobby() {
+            if (!roomId) roomId = 'room_' + Math.random().toString(36).substr(2, 6);
+            startOnlineMode();
+        }
+
+        function startOnlineMode() {
+            isOffline = false;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('lobby-screen').style.display = 'flex';
+
+            socket = io();
+            const playerName = Telegram.initDataUnsafe?.user?.first_name || "O'yinchi";
+            socket.emit('joinRoom', { roomId, playerName });
+
+            socket.on('updatePlayers', (data) => {
+                if (data.count === 1) {
+                    document.getElementById('lobby-status').innerText = "Raqib kutilmoqda...";
+                }
+            });
+
+            socket.on('dealHand', (hand) => { myCards = hand; renderHand(); });
+            socket.on('timerUpdate', (t) => { document.getElementById('timer').innerText = t; });
+
+            socket.on('gameStateUpdate', (data) => {
+                document.getElementById('lobby-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+
+                topCard = data.topCard;
+                renderTableCard();
+                document.getElementById('current-turn').innerText = "Navbat: " + data.currentTurnPlayer;
+            });
+
+            socket.on('invalidMove', (msg) => { vibrate(); alert(msg); });
+            socket.on('gameOver', (msg) => { alert(msg); location.reload(); });
+        }
+
+        // --- OFFLINE 1v1 BOT MODE ---
+        function startOfflineMode() {
+            isOffline = true;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            let deck = [];
+            COLORS.forEach(c => VALUES.forEach(v => deck.push({ color: c, val: v })));
+            deck.sort(() => Math.random() - 0.5);
+
+            myCards = deck.splice(0, 7);
+            botCards = deck.splice(0, 7);
+            topCard = deck.pop();
+
+            renderHand();
+            renderTableCard();
+            document.getElementById('current-turn').innerText = "Navbat: Sizda";
+        }
+
+        function botPlayTurn() {
+            setTimeout(() => {
+                let playableIdx = botCards.findIndex(c => c.color === topCard.color || c.val === topCard.val || c.color === 'black');
+                if (playableIdx !== -1) {
+                    let card = botCards.splice(playableIdx, 1)[0];
+                    if (card.color === 'black') card.color = COLORS[Math.floor(Math.random() * 4)];
+                    topCard = card;
+                    renderTableCard();
+                } else {
+                    botCards.push({ color: COLORS[Math.floor(Math.random() * 4)], val: '5' });
+                }
+
+                if (botCards.length === 0) {
+                    alert("Bot g'olib bo'ldi! 🤖");
+                    location.reload();
+                    return;
+                }
+                isMyTurn = true;
+                document.getElementById('current-turn').innerText = "Navbat: Sizda";
+            }, 1200);
+        }
+
+        // --- GENERAL LOGIC ---
         function renderHand() {
             const handElem = document.getElementById('player-hand');
             handElem.innerHTML = '';
@@ -166,60 +271,83 @@
             });
         }
 
+        function renderTableCard() {
+            const tc = document.getElementById('table-card');
+            tc.className = `card ${topCard.color}`;
+            tc.innerText = topCard.val;
+        }
+
         function playCard(index) {
             vibrate();
             const card = myCards[index];
-            if (card.color === 'black') {
-                pendingCardIdx = index;
-                document.getElementById('color-modal').style.display = 'flex';
+
+            if (isOffline) {
+                if (!isMyTurn) return;
+                if (card.color === 'black' || card.color === topCard.color || card.val === topCard.val) {
+                    if (card.color === 'black') {
+                        pendingCardIdx = index;
+                        document.getElementById('color-modal').style.display = 'flex';
+                        return;
+                    }
+                    topCard = card;
+                    myCards.splice(index, 1);
+                    renderHand();
+                    renderTableCard();
+
+                    if (myCards.length === 0) {
+                        alert("Siz g'olib bo'ldingiz! 🎉");
+                        location.reload();
+                        return;
+                    }
+
+                    isMyTurn = false;
+                    document.getElementById('current-turn').innerText = "Navbat: Botda";
+                    botPlayTurn();
+                } else {
+                    alert("Bu kartani tashlab bo'lmaydi!");
+                }
             } else {
-                socket.emit('playCard', { cardIndex: index });
+                if (card.color === 'black') {
+                    pendingCardIdx = index;
+                    document.getElementById('color-modal').style.display = 'flex';
+                } else {
+                    socket.emit('playCard', { roomId, cardIndex: index });
+                }
             }
         }
 
         function pickColor(color) {
             document.getElementById('color-modal').style.display = 'none';
             if (pendingCardIdx !== null) {
-                socket.emit('playCard', { cardIndex: pendingCardIdx, chosenColor: color });
+                if (isOffline) {
+                    myCards[pendingCardIdx].color = color;
+                    topCard = myCards.splice(pendingCardIdx, 1)[0];
+                    renderHand();
+                    renderTableCard();
+                    isMyTurn = false;
+                    document.getElementById('current-turn').innerText = "Navbat: Botda";
+                    botPlayTurn();
+                } else {
+                    socket.emit('playCard', { roomId, cardIndex: pendingCardIdx, chosenColor: color });
+                }
                 pendingCardIdx = null;
             }
         }
 
-        function drawCard() { vibrate(); if (socket) socket.emit('drawCard'); }
-
-        function startOnline() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('lobby-screen').style.display = 'flex';
-
-            socket = io();
-            const name = Telegram.initDataUnsafe?.user?.first_name || "O'yinchi";
-            socket.emit('joinRoom', name);
-
-            socket.on('init', (data) => { isHost = data.isHost; });
-            socket.on('updatePlayers', (data) => {
-                document.getElementById('player-count').innerText = `O'yinchilar: ${data.count} / 4`;
-                document.getElementById('start-btn').style.display = (isHost && data.count >= 2) ? 'block' : 'none';
-            });
-
-            socket.on('dealHand', (hand) => { myCards = hand; renderHand(); });
-            socket.on('timerUpdate', (t) => { document.getElementById('timer').innerText = t; });
-
-            socket.on('gameStateUpdate', (data) => {
-                document.getElementById('lobby-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'flex';
-
-                const tc = document.getElementById('table-card');
-                tc.className = `card ${data.topCard.color}`;
-                tc.innerText = data.topCard.val;
-
-                document.getElementById('current-turn').innerText = "Navbat: " + data.currentTurnPlayer;
-            });
-
-            socket.on('invalidMove', (msg) => { vibrate(); alert(msg); });
-            socket.on('gameOver', (msg) => { alert(msg); location.reload(); });
+        function drawCard() {
+            vibrate();
+            if (isOffline) {
+                if (!isMyTurn) return;
+                myCards.push({ color: COLORS[Math.floor(Math.random() * 4)], val: Math.floor(Math.random() * 9).toString() });
+                renderHand();
+                isMyTurn = false;
+                document.getElementById('current-turn').innerText = "Navbat: Botda";
+                botPlayTurn();
+            } else {
+                if (socket) socket.emit('drawCard', { roomId });
+            }
         }
 
-        function triggerStart() { if (socket) socket.emit('startGame'); }
         function exitGame() { if (confirm("Chiqasizmi?")) location.reload(); }
     </script>
 </body>
