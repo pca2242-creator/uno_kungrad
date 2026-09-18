@@ -1,39 +1,73 @@
 ﻿const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(__dirname + '/public'));
-
-app.get('*', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-});
+app.get('*', (req, res) => res.sendFile(__dirname + '/public/index.html'));
 
 let players = [];
 const COLORS = ['red', 'blue', 'green', 'yellow'];
-const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2'];
+const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Skip', '+2', 'Wild'];
 
 let gameStarted = false;
 let currentTurnIndex = 0;
 let topCard = null;
 let deck = [];
+let turnTimer = null;
 
-// Koloda yaratish va aralashtirish
 function createDeck() {
     let newDeck = [];
     COLORS.forEach(color => {
         VALUES.forEach(val => {
-            newDeck.push({ color, val });
-            if (val !== '0') newDeck.push({ color, val }); // 0 dan tashqari kartalardan 2 tadan
+            if (val === 'Wild') {
+                newDeck.push({ color: 'black', val: 'Wild' });
+            } else {
+                newDeck.push({ color, val });
+                if (val !== '0') newDeck.push({ color, val });
+            }
         });
     });
     return newDeck.sort(() => Math.random() - 0.5);
+}
+
+function startTurnTimer() {
+    if (turnTimer) clearInterval(turnTimer);
+    let timeLeft = 15;
+    
+    io.emit('timerUpdate', timeLeft);
+    turnTimer = setInterval(() => {
+        timeLeft--;
+        io.emit('timerUpdate', timeLeft);
+        if (timeLeft <= 0) {
+            clearInterval(turnTimer);
+            autoDrawAndPass();
+        }
+    }, 1000);
+}
+
+function autoDrawAndPass() {
+    if (!gameStarted || players.length === 0) return;
+    const player = players[currentTurnIndex];
+    if (deck.length === 0) deck = createDeck();
+    const newCard = deck.pop();
+    player.hand.push(newCard);
+
+    currentTurnIndex = (currentTurnIndex + 1) % players.length;
+    io.to(player.id).emit('dealHand', player.hand);
+    broadcastGameState();
+}
+
+function broadcastGameState() {
+    startTurnTimer();
+    io.emit('gameStateUpdate', {
+        topCard,
+        currentTurnPlayer: players[currentTurnIndex].name,
+        currentTurnId: players[currentTurnIndex].id
+    });
 }
 
 io.on('connection', (socket) => {
@@ -45,15 +79,15 @@ io.on('connection', (socket) => {
                 id: socket.id, 
                 name: playerName || `O'yinchi ${players.length + 1}`, 
                 color: playerColor, 
-                isHost: isHost,
+                isHost,
                 hand: []
             };
             
             players.push(newPlayer);
-            socket.emit('init', { id: socket.id, color: playerColor, isHost: isHost });
-            io.emit('updatePlayers', { count: players.length, players: players });
+            socket.emit('init', { id: socket.id, color: playerColor, isHost });
+            io.emit('updatePlayers', { count: players.length, players });
         } else {
-            socket.emit('full', 'Xona to\'la yoki o\'yin boshlanib bo\'lingan!');
+            socket.emit('full', 'Xona to\'la!');
         }
     });
 
@@ -63,82 +97,60 @@ io.on('connection', (socket) => {
             gameStarted = true;
             deck = createDeck();
 
-            // Har bir o'yinchiga 7 tadan karta tarqatish
             players.forEach(p => {
                 p.hand = deck.splice(0, 7);
                 io.to(p.id).emit('dealHand', p.hand);
             });
 
-            // Stol markaziga birinchi kartani qo'yish
-            topCard = deck.pop();
-            currentTurnIndex = 0;
+            do {
+                topCard = deck.pop();
+            } while (topCard.color === 'black');
 
-            io.emit('gameStateUpdate', {
-                topCard: topCard,
-                currentTurnPlayer: players[currentTurnIndex].name,
-                currentTurnId: players[currentTurnIndex].id
-            });
+            currentTurnIndex = 0;
+            broadcastGameState();
         }
     });
 
-    // Karta tashlash logikasi va tekshiruvi
-    socket.on('playCard', (cardIndex) => {
+    socket.on('playCard', ({ cardIndex, chosenColor }) => {
         if (!gameStarted) return;
         const player = players.find(p => p.id === socket.id);
 
-        // Faqat o'z navbati kelgan o'yinchi karta tashlay oladi
         if (player && players[currentTurnIndex].id === socket.id) {
             const playedCard = player.hand[cardIndex];
 
-            // QOIDA TEKSHIRUVI: Rangi yoki Qiymati mos kelishi shart
-            if (playedCard.color === topCard.color || playedCard.val === topCard.val) {
-                topCard = playedCard;
-                player.hand.splice(cardIndex, 1); // Qo'ldan olib tashlash
+            const isValid = playedCard.color === 'black' || 
+                            playedCard.color === topCard.color || 
+                            playedCard.val === topCard.val;
 
-                // Qo'lda karta qolmagan bo'lsa - G'olib!
+            if (isValid) {
+                if (playedCard.color === 'black' && chosenColor) {
+                    playedCard.color = chosenColor;
+                }
+                topCard = playedCard;
+                player.hand.splice(cardIndex, 1);
+
                 if (player.hand.length === 0) {
+                    if (turnTimer) clearInterval(turnTimer);
                     io.emit('gameOver', `${player.name} g'olib bo'ldi! 🎉`);
                     gameStarted = false;
                     return;
                 }
 
-                // Navbatni keyingi o'yinchiga o'tkazish
-                let step = 1;
-                if (playedCard.val === 'Skip') step = 2; // Qadamni o'tkazib yuborish
-
+                let step = playedCard.val === 'Skip' ? 2 : 1;
                 currentTurnIndex = (currentTurnIndex + step) % players.length;
 
-                // Yangilangan holatni barchaga yuborish
                 socket.emit('dealHand', player.hand);
-                io.emit('gameStateUpdate', {
-                    topCard: topCard,
-                    currentTurnPlayer: players[currentTurnIndex].name,
-                    currentTurnId: players[currentTurnIndex].id
-                });
+                broadcastGameState();
             } else {
-                socket.emit('invalidMove', 'Bu kartani tashlay olmaysiz! Rangi yoki raqami mos kelishi kerak.');
+                socket.emit('invalidMove', 'Bu karta tushmaydi!');
             }
         }
     });
 
-    // Kolodadan karta olish
     socket.on('drawCard', () => {
         if (!gameStarted) return;
-        const player = players.find(p => p.id === socket.id);
-
-        if (player && players[currentTurnIndex].id === socket.id) {
-            if (deck.length === 0) deck = createDeck();
-            const newCard = deck.pop();
-            player.hand.push(newCard);
-
-            currentTurnIndex = (currentTurnIndex + 1) % players.length;
-
-            socket.emit('dealHand', player.hand);
-            io.emit('gameStateUpdate', {
-                topCard: topCard,
-                currentTurnPlayer: players[currentTurnIndex].name,
-                currentTurnId: players[currentTurnIndex].id
-            });
+        if (players[currentTurnIndex].id === socket.id) {
+            autoDrawAndPass();
         }
     });
 
@@ -147,19 +159,18 @@ io.on('connection', (socket) => {
         if (index !== -1) {
             const wasHost = players[index].isHost;
             players.splice(index, 1);
-            
             if (wasHost && players.length > 0) {
                 players[0].isHost = true;
                 io.to(players[0].id).emit('makeHost');
             }
-
-            if (players.length < 2) gameStarted = false;
-            io.emit('updatePlayers', { count: players.length, players: players });
+            if (players.length < 2) {
+                gameStarted = false;
+                if (turnTimer) clearInterval(turnTimer);
+            }
+            io.emit('updatePlayers', { count: players.length, players });
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server ${PORT}-portda ishlamoqda`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
